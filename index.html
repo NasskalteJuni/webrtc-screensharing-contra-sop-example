@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="Lukas Steinjan">
+    <meta name="description" content="Website to show problems that show how screensharing can collide with the Same Origin Policy">
+    <title>Screensharing contra Same Origin Policy</title>
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <!-- using the adapter shim to make up for differences in WebRTC versions -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/6.1.4/adapter.min.js"></script>
+    <!-- using the tesseract character recognition library to gain information out of recognized images -->
+    <script src="https://cdn.rawgit.com/naptha/tesseract.js/1.0.10/dist/tesseract.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <header>
+        <div class="headline-container container">
+            <h1>Screensharing contra Same Origin Policy</h1>
+        </div>
+    </header>
+    <main class="container">
+        <article class="description">
+            <h2>About this Page</h2>
+            <p>
+                This page serves as a sample to demonstrate, how screen capture may break the Same Origin Policy,
+                or to be more precise, that a website can access information from another website without the other website and and the user being aware of this.
+                It will be probably not exploitable in away like getting session IDs to hijack a session but may serve as a help for social engineering,
+                giving away maybe private information of a user profile page like username, date of birth and place of residence.
+                To access this information, this page makes use of the nature of iframes, which accept browser stored cookies for the displayed site,
+                therefore showing a logged in page view if the user is currently logged in in another tab and the non-standard http-header,
+                X-FRAME-OPTIONS not being set to SAME_ORIGIN by default, thus allowing pages to be embedded by an iframe.
+                If we are able to display this information, we may use screen capture in a kind of feature hijacking way.
+                We use it to make a screenshot of our frame and use an optical character recognition (OCR) to react to expected keywords.
+                Then, we may send the full text or possibly the words after the keywords, since a page may have a listing of personal information in the form of
+                "username: name", and so on and send them to the web server where we can use them for other purposes against the user.
+                We have the advantage, that we have to flash this iframe just for a few milliseconds while we make the screenshot, so the user may not be able to notice it.
+            </p>
+            <p> For the different browsers, here are some advices that may help getting screen capture to work since it is possibly not a standard feature</p>
+            <ul>
+                <li>Firefox: You may be prompted to whitelist this page, click on the accept-option</li>
+                <li>Chrome: You may have to start chrome from the command line with the flag <code>–enable-usermedia-screen-capturing</code></li>
+            </ul>
+            <p>
+                Use the following form to enter a website URL that you are logged in, maybe a profile page and if you want a comma separated list of keywords.
+                An attacker has to guess if some of the users of his malicious page also visit the URL you typed in but he may be able to guess successfully.
+            </p>
+        </article>
+        <section class="form-fields">
+            <form id="form">
+                <fieldset>
+                    <input type="text" id="url-field" required pattern="(http(s)?:\/\/)?([a-zA-Z0-9]+\.)+[a-zA-Z]{2,16}(.)*" placeholder="Website URL">
+                </fieldset>
+                <fieldset>
+                    <input type="text" id="keyword-list-field" placeholder="comma separated keywords">
+                </fieldset>
+                <fieldset>
+                    <button type="submit">Try</button>
+                    <button type="reset">Cancel</button>
+                </fieldset>
+            </form>
+        </section>
+        <section class="errors">
+
+        </section>
+        <section class="results-container">
+
+        </section>
+    </main>
+    <script>
+        document.getElementById("form").onsubmit = function(e){
+            e.preventDefault();
+            main();
+        }
+    </script>
+</body>
+</html>
