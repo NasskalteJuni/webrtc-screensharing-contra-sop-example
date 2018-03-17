@@ -7,6 +7,8 @@
     <title>Screensharing contra Same Origin Policy</title>
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="main.css">
+    <!-- add a polyfill for ImageCapture -->
+    <script src="ImageCapture.min.js"></script>
     <!-- using the adapter shim to make up for differences in WebRTC versions -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/6.1.4/adapter.min.js"></script>
     <!-- using the tesseract character recognition library to gain information out of recognized images -->
@@ -23,18 +25,41 @@
         <article class="description">
             <h2>About this Page</h2>
             <p>
-                This page serves as a sample to demonstrate, how screen capture may break the Same Origin Policy,
-                or to be more precise, that a website can access information from another website without the other website and and the user being aware of this.
-                It will be probably not exploitable in away like getting session IDs to hijack a session but may serve as a help for social engineering,
+                This page serves as a sample to demonstrate, how screen capture could weaken the Same Origin Policy,
+                or to be more precise, that a website can access information from another website without the other website and and the user being necessary aware of this.
+                To get to the test part, just click <a href="#form">here</a>, further explanation on the attack follows.
+                The attack will be probably not exploitable, like getting session IDs to hijack a session (which was possible in the past), but may serve as a help for social engineering,
                 giving away maybe private information of a user profile page like username, date of birth and place of residence.
-                To access this information, this page makes use of the nature of iframes, which accept browser stored cookies for the displayed site,
-                therefore showing a logged in page view if the user is currently logged in in another tab and the non-standard http-header,
-                X-FRAME-OPTIONS not being set to SAME_ORIGIN by default, thus allowing pages to be embedded by an iframe.
+                I was inspired to create this demonstration by the paper of Yuan Tian, Ying-Chuan Liu, Amar Bhosale, Lin-Shung Huang,Patrick Tague,Collin Jackson of the Carnegie Mellon University,
+                with the great title <a href="https://www.ieee-security.org/TC/SP2014/papers/AllYourScreensareBelongtoUs_c_AttacksExploitingtheHTML5ScreenSharingAPI.pdf">
+                "All Your Screens are Belong to Us: Attacks Exploiting the HTML5 Screen Sharing API" </a>.
+                The security hole that made XSRF attacks possible is already closed, but the basic idea of breaking Same Origin Policy remains.
+                On this page, I just tried to get Information from other websites.
+                I have a model of three relevant instances in this attempt:
+                <ul>
+                    <li> a <i>"Victim Page" (VP)</i>, which contains somehow interesting or exploitable information </li>
+                    <li> a <i>"Malicious Trusted Page" (MTP)</i>, which is a website that is allowed screen capture by the user for legitimate reasons, but abuses this right to do things not obvious to the user, described here</li>
+                    <li> a <i>"Limited User" (LU)</i>, who is limited in sight, does not recognise swiftly flashing images and does not expect the MTP to behave maliciously </li>
+                    <li> an <i>"Attacker" (A)</i>, who can configure the MTP for his attack (by cross site scripting, gaining access to the page server in some way, etc.)</li>
+                </ul>
+                For the attempt to be successful, I have these premises:
+                <ul>
+                    <li> the LU must allow screen capture to the MTP for some reason</li>
+                    <li> the A guessed correctly that the LU visits the VP and knows at least the VP URL</li>
+                    <li> the LU does <strong>not</strong> have to switch to the browser tab with the VP and can remain completely on the MTP</li>
+                    <li> the LU is logged in on the VP</li>
+                    <li> the VP has not set the X-FRAME-OPTIONS HTTP custom header field </li>
+                </ul>
+                To gain access to VP information, this MTP example makes use of the nature of iframes, which accept browser stored cookies for the displayed VP,
+                therefore showing a logged in page view if the LU is currently logged in in another tab.
                 If we are able to display this information, we may use screen capture in a kind of feature hijacking way.
-                We use it to make a screenshot of our frame and use an optical character recognition (OCR) to react to expected keywords.
-                Then, we may send the full text or possibly the words after the keywords, since a page may have a listing of personal information in the form of
-                "username: name", and so on and send them to the web server where we can use them for other purposes against the user.
+                We use it to make a screenshot of our frame and the MTP can send the picture over a HTTP-Request or any way to the server of the MTP,
+                where the A can post process the informations of the image.
+                But we can also use an optical character recognition (OCR) to react to expected keywords.
+                We can even get the full text or possibly the words after the keywords, since a page may have a listing of personal information in the form of
+                "username: name", and so on. I will do this as an example and display the results here, if keywords are given.
                 We have the advantage, that we have to flash this iframe just for a few milliseconds while we make the screenshot, so the user may not be able to notice it.
+                To demonstrate the described attack, insert the 'guessed URL' of the VP, a URL where you are currenlty logged in.
             </p>
             <p> For the different browsers, here are some advices that may help getting screen capture to work since it is possibly not a standard feature</p>
             <ul>
@@ -43,11 +68,29 @@
             </ul>
             <p>
                 Use the following form to enter a website URL that you are logged in, maybe a profile page and if you want a comma separated list of keywords.
-                An attacker has to guess if some of the users of his malicious page also visit the URL you typed in but he may be able to guess successfully.
+            </p>
+            <p>
+                <h2>Problems: </h2>
+                There is a chance, that this will fail due to a delay in the MediaStream processing.
+                In this case, the screen capture is activated, the VP is opened in an iFrame, but the stream is a little bit late and still shows the before-open view when capturing the frame.
+                Due to this, only the MTP is captured. A better successrate can be reached, if one could determine, when the stream shows the VP and start the capture then or expose the VP for longer.
+                This would increase the chance of the attempt to be more visible.
+                <br>
+            </p>
+            <p>
+                <h2>Conclusion: </h2>
+                The described attack is always visible and can be noticed. It needs a very trustful user, but not someone, who acts completely without reason.
+                It relies pretty much on luck, having a user being locked in on a VP that has no X-FRAME-OPTIONS header, which is not uncommon so it would take a long time for a specific single user.
+                But for hundreds of users, it may work well enough. The extracted data is probably not worth very much,
+                since the option to show the page source code in an iFrame with possible Nonces or SessionIDs is not possible any more.
+                Besides this, not all browsers even support screen sharing.
+                All in all, it may break the Same Origin Policy at some point, but it is rather harmless and not reliably exploitable.
+                <br>
             </p>
         </article>
         <section class="form-fields">
             <form id="form">
+                <h2>Test</h2>
                 <fieldset>
                     <input type="text" id="url-field" required pattern="(http(s)?:\/\/)?([a-zA-Z0-9]+\.)+[a-zA-Z]{2,16}(.)*" placeholder="Website URL">
                 </fieldset>
@@ -60,10 +103,7 @@
                 </fieldset>
             </form>
         </section>
-        <section class="errors">
-
-        </section>
-        <section class="results-container">
+        <section class="results-container" id="results-container">
 
         </section>
     </main>
