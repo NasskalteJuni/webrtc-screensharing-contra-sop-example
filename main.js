@@ -24,8 +24,12 @@ function showResults(result){
     container.innerHTML += '<br> Screenshot: <br>' + result.image.outerHTML;
 }
 
-function loadExternalPage(url){
-    // show iframe of page
+/**
+ * Load the embedded page in an iFrame but without the iFrame being visible
+ * @param url the url of the external website (VP)
+ * @return Promise resolves when the page is preloaded, rejects, when an error occurs
+ * */
+function preloadExternalPage(url){
     const iframe = document.createElement("iframe");
     iframe.style.width = window.innerWidth + 'px';
     iframe.style.height = window.innerHeight + 'px';
@@ -45,20 +49,29 @@ function loadExternalPage(url){
     });
 }
 
-function showExternalPage(stream){
+
+/**
+ * Displays the preloaded external page, must be called after preloadExternalPage
+ * @param Number [optional] minDelayTime (in ms) since the MediaStream received is a delayed version of the current page, guess a fitting delay time that prolongs this method call
+ * @return Promise resolves after the given delay
+ * */
+function showExternalPage(minDelayTime){
+    minDelayTime = minDelayTime || 1;
     tmp.style.display = "block";
     return new Promise(function(resolve){
         setTimeout(function(){
-            resolve(stream);
-        }, 200);
+            resolve();
+        }, minDelayTime);
     });
 }
 
-function removeExternalPage(image){
+/**
+ * Hides and removes the displayed external page
+ * */
+function removeExternalPage(){
     // remove possible iframe
     if(tmp)document.body.removeChild(tmp);
     tmp = null;
-    return image;
 }
 
 function getScreenCapture(){
@@ -88,6 +101,12 @@ function getImageFromStream(stream){
     });
 }
 
+/**
+ * takes an image and possible keywords, returns the text contained in the image and the words after the keywords, if specified
+ * @param image ImageObject (can be an html img-element or something similar)
+ * @param keywordMatches Array of words that are searched in the recognized text
+ * @return Object gives the result of the analysis, containing the given image (attribute: image), the fulltext (attribute: fulltext) and the matched keywords (attribute: matches)
+ * */
 function analyzeImageText(image, keywordMatches){
     if(!keywordMatches) keywordMatches = [];
     // let the tesseract ocr analyze the image (the weird Promise.resolve is due to the fact, that tessaract uses promise alikes, that do not chain like real ones)
@@ -110,12 +129,22 @@ function analyzeImageText(image, keywordMatches){
         .catch(console.error);
 }
 
+/**
+ * main method that displays a specified page for a short time in an iFrame,
+ * captures the image and gives it to an OCR that shows the recognized text.
+ * logs occuring errors to console.
+ * */
 function main(){
-    loadExternalPage(getUrl())
+    preloadExternalPage(getUrl())
         .then(getScreenCapture)
-        .then(showExternalPage)
+        .then(function(stream){
+            return showExternalPage(200).then(function(){ return stream; });  // show the page for at least 200 ms
+        })
         .then(getImageFromStream)
-        .then(removeExternalPage)
+        .then(function(image){
+            removeExternalPage();
+            return image;
+        })
         .then(function(image){
             return analyzeImageText(image, getKeywords())
         })
